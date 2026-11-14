@@ -1,0 +1,14 @@
+#!/bin/sh
+# PROVIDE: deepseek_codex
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+. /etc/rc.subr
+name="deepseek_codex"
+rcvar="deepseek_codex_enable"
+load_rc_config "$name"
+: ${deepseek_codex_enable:="NO"}
+pidfile="/var/run/deepseek_codex.pid"
+command="/usr/sbin/daemon"
+command_args="-r -R 5 -P ${pidfile} -p /var/run/deepseek_codex.child.pid -o /var/log/deepseek_codex.log /usr/local/bin/python3 -u /usr/local/libexec/deepseek-codex/bridge.py"
+umask 077
+run_rc_command "$1"
