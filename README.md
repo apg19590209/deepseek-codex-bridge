@@ -37,7 +37,13 @@ Configuration reference: https://learn.chatgpt.com/docs/config-file/config-advan
 
 ## Tests and evidence
 
-The 20 original offline tests cover history, namespace translation, and stream handling. Seven package regressions cover stream completion, instruction ordering, malformed HTTP input, missing authorization, and upstream failure. HTTP tests use a local server and mocked upstream responses, never real credentials or API calls. See `VALIDATION.md` for the current package checks.
+The 20 original offline tests cover history, namespace translation, and stream handling. Seven package regressions cover stream completion, instruction ordering, malformed HTTP input, missing authorization, and upstream failure. Seven further diagnostics tests cover both translation stages and sensitive-detail suppression. HTTP tests use a local server and mocked upstream responses, never real credentials or API calls. See `VALIDATION.md` for the current package checks.
+
+## Translation-rejection diagnostics
+
+When request translation is refused, the bridge writes one `bridge_translation_rejected` JSON event to stderr containing only the `stage` (`flatten` or `responses_to_chat`), the exception class, and an allowlisted reason label. Any other exception text is replaced with `details omitted`. Request bodies, prompts, images, credentials, and raw exception details are never logged, and the client still receives the same HTTP 400 refusal. This logging does not change or extend what the bridge accepts.
+
+On a FreeBSD testbed, fresh-session plain text and separate shell calls passed. Viewing an image previously ended with a schema-rejection response; the precise original exception remains unconfirmed, and no image support or compatibility fix is claimed.
 
 Operator-reported FreeBSD testing of the predecessor included separate shell calls, a sustained multi-step session, and automatic child restart under `daemon`. Those observations are not a cross-platform certification, a reboot test, or proof that early stops are fixed.
 

@@ -67,10 +67,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not auth or not auth.lower().startswith("bearer ") or not auth[7:].strip():
             self.send_error(401, "Bearer authorization required")
             return
+        stage = "flatten"
         try:
             translated, tool_map = flatten(body)
+            stage = "responses_to_chat"
             converted = responses_to_chat(translated)
-        except (ValueError, KeyError, TypeError):
+        except (ValueError, KeyError, TypeError) as exc:
+            known = {
+                "Unsupported child tool type",
+                "Duplicate tool identity",
+                "Tool alias collision",
+                "Unsupported non-text content",
+                "Missing, duplicate or unmatched tool results",
+                "Unsupported message role",
+                "Tool call lacks call_id",
+                "Duplicate or orphan tool result",
+                "Unsupported history item",
+            }
+            reason = str(exc)
+            if reason not in known:
+                reason = "details omitted"
+            print(json.dumps({
+                "event": "bridge_translation_rejected",
+                "stage": stage,
+                "exception": type(exc).__name__,
+                "reason": reason
+            }), file=sys.stderr, flush=True)
             self.send_error(400, "Unsupported request/tool schema; bridge cannot safely translate it")
             return
         print(json.dumps({"event": "bridge_request", "tool_types": [t.get("type") for t in body.get("tools", [])], "forwarded_tools": len(converted.get("tools", []))}), file=sys.stderr, flush=True)
